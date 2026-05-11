@@ -3,6 +3,7 @@ from pathlib import Path
 import base64
 import io
 import json
+import os
 import re
 import socket
 import sys
@@ -323,9 +324,10 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", "8000"))
     try:
-        server = ThreadingHTTPServer(("localhost", port), Handler)
+        server = ThreadingHTTPServer((host, port), Handler)
     except OSError as exc:
         if exc.errno == 48:
             editor_url = f"http://localhost:{port}/LevelDesigner/level-editor.html"
@@ -340,7 +342,8 @@ def main():
             print(f"python3 LevelDesigner/export_server.py {port + 1}")
             return
         raise
-    print(f"Serving level editor at http://localhost:{port}/LevelDesigner/level-editor.html")
+    print(f"Serving level editor on {host}:{port}")
+    print(f"Local URL: http://localhost:{port}/LevelDesigner/level-editor.html")
     server.serve_forever()
 
 
