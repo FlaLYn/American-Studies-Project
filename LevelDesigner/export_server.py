@@ -257,6 +257,23 @@ class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
+    def redirect_to_editor(self):
+        self.send_response(302)
+        self.send_header("Location", "/LevelDesigner/level-editor.html")
+        self.end_headers()
+
+    def do_GET(self):
+        if self.path in {"/", "/index.html"}:
+            self.redirect_to_editor()
+            return
+        super().do_GET()
+
+    def do_HEAD(self):
+        if self.path in {"/", "/index.html"}:
+            self.redirect_to_editor()
+            return
+        super().do_HEAD()
+
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
