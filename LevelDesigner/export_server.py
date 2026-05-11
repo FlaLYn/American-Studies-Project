@@ -48,6 +48,21 @@ def render_action(base, action):
     kind = action.get("type")
     if kind == "template":
         render_template(draw, base)
+    elif kind == "backgroundImage":
+        src = action.get("src", "")
+        if src.startswith("data:"):
+            image = Image.open(io.BytesIO(decode_data_url(src))).convert("RGBA")
+        else:
+            path = project_path(src)
+            if not path.is_file():
+                raise FileNotFoundError(f"Missing background image: {path}")
+            image = Image.open(path).convert("RGBA")
+        x = int(action.get("x", 0))
+        y = int(action.get("y", 0))
+        w = int(action.get("w", base.size[0]))
+        h = int(action.get("h", base.size[1]))
+        image = image.resize((w, h), Image.Resampling.NEAREST)
+        base.alpha_composite(image, (x, y))
     elif kind == "stroke":
         points = [(p["x"], p["y"]) for p in action.get("points", [])]
         if len(points) > 1:
@@ -210,6 +225,33 @@ def build_bundle(payload):
     return archive.read()
 
 
+def import_bundle(zip_data):
+    raw = base64.b64decode(zip_data)
+    with zipfile.ZipFile(io.BytesIO(raw), "r") as bundle:
+        names = bundle.namelist()
+        background_name = next((name for name in names if name.endswith("/background.png") or name == "background.png"), None)
+        hitboxes_name = next((name for name in names if name.endswith("/hitboxes.json") or name == "hitboxes.json"), None)
+        characters_name = next((name for name in names if name.endswith("/characters.json") or name == "characters.json"), None)
+        notes_name = next((name for name in names if name.endswith("/notes.json") or name == "notes.json"), None)
+        if not background_name:
+            raise ValueError("Zip does not contain background.png")
+        background_bytes = bundle.read(background_name)
+        image = Image.open(io.BytesIO(background_bytes))
+        width, height = image.size
+        background_data_url = f"data:image/png;base64,{base64.b64encode(background_bytes).decode('ascii')}"
+        hitboxes_payload = json.loads(bundle.read(hitboxes_name).decode("utf-8")) if hitboxes_name else {}
+        characters_payload = json.loads(bundle.read(characters_name).decode("utf-8")) if characters_name else {}
+        notes_payload = json.loads(bundle.read(notes_name).decode("utf-8")) if notes_name else {}
+        return {
+            "width": width,
+            "height": height,
+            "backgroundDataUrl": background_data_url,
+            "hitboxes": hitboxes_payload.get("hitboxes", hitboxes_payload if isinstance(hitboxes_payload, list) else []),
+            "characters": characters_payload.get("characters", characters_payload if isinstance(characters_payload, list) else []),
+            "notes": notes_payload.get("notes", notes_payload if isinstance(notes_payload, list) else []),
+        }
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -260,6 +302,15 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_header("Content-Length", str(len(bundle)))
                 self.end_headers()
                 self.wfile.write(bundle)
+                return
+            if self.path == "/import/bundle":
+                imported = import_bundle(payload.get("zipData", ""))
+                response = json.dumps(imported).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(response)))
+                self.end_headers()
+                self.wfile.write(response)
                 return
             self.send_error(404)
         except Exception as exc:

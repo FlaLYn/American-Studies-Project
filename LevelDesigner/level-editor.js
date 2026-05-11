@@ -1,6 +1,8 @@
 const canvas = document.getElementById("levelCanvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
+const workspace = document.querySelector(".workspace");
+const workspaceDropHint = document.getElementById("workspaceDropHint");
 
 const colorInput = document.getElementById("color");
 const sizeInput = document.getElementById("size");
@@ -64,6 +66,10 @@ const noteXInput = document.getElementById("noteX");
 const noteYInput = document.getElementById("noteY");
 const exportNotesJsonBtn = document.getElementById("exportNotesJsonBtn");
 const deleteNoteBtn = document.getElementById("deleteNoteBtn");
+
+function hideWorkspaceDropHint() {
+  if (workspaceDropHint) workspaceDropHint.hidden = true;
+}
 
 const modernExteriorThemeDefs = [
   ["1_Terrains_and_Fences", "Terrains and Fences"],
@@ -291,6 +297,8 @@ function syncCanvasBoundInputs() {
   if (levelExpandYInput) levelExpandYInput.value = state.levelExpandY;
   if (characterXInput) characterXInput.max = String(canvas.width);
   if (characterYInput) characterYInput.max = String(canvas.height);
+  if (noteXInput) noteXInput.max = String(canvas.width);
+  if (noteYInput) noteYInput.max = String(canvas.height);
   if (hitboxWidthInput) hitboxWidthInput.max = String(canvas.width);
   if (hitboxHeightInput) hitboxHeightInput.max = String(canvas.height);
 }
@@ -311,9 +319,59 @@ function offsetAction(action, dx, dy) {
     action.to.y += dy;
     return;
   }
-  if (action.type === "asset" || action.type === "hitbox" || action.type === "character") {
+  if (action.type === "asset" || action.type === "hitbox" || action.type === "character" || action.type === "note" || action.type === "backgroundImage") {
     action.x += dx;
     action.y += dy;
+  }
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function clipActionToCanvas(action, width, height) {
+  if (action.type === "stroke" && Array.isArray(action.points)) {
+    action.points = action.points
+      .map((point) => ({
+        x: clamp(point.x, 0, width),
+        y: clamp(point.y, 0, height)
+      }));
+    return;
+  }
+  if ((action.type === "line" || action.type === "rect") && action.from && action.to) {
+    action.from.x = clamp(action.from.x, 0, width);
+    action.from.y = clamp(action.from.y, 0, height);
+    action.to.x = clamp(action.to.x, 0, width);
+    action.to.y = clamp(action.to.y, 0, height);
+    return;
+  }
+  if (action.type === "asset") {
+    action.x = clamp(action.x, 0, width);
+    action.y = clamp(action.y, 0, height);
+    return;
+  }
+  if (action.type === "hitbox") {
+    action.x = clamp(action.x, 0, width);
+    action.y = clamp(action.y, 0, height);
+    action.w = Math.max(8, Math.min(action.w, Math.max(8, width - action.x)));
+    action.h = Math.max(8, Math.min(action.h, Math.max(8, height - action.y)));
+    return;
+  }
+  if (action.type === "character") {
+    action.x = clamp(action.x, 0, Math.max(0, width - action.w));
+    action.y = clamp(action.y, 0, Math.max(0, height - action.h));
+    return;
+  }
+  if (action.type === "note") {
+    action.x = clamp(action.x, 0, width);
+    action.y = clamp(action.y, 0, height);
+    return;
+  }
+  if (action.type === "backgroundImage") {
+    action.x = clamp(action.x || 0, 0, width);
+    action.y = clamp(action.y || 0, 0, height);
+    action.w = width;
+    action.h = height;
   }
 }
 
@@ -322,30 +380,27 @@ function resizeLevelCanvas(nextWidth, nextHeight) {
   const previousHeight = canvas.height;
   const width = snapLevelDimension(nextWidth, canvas.width);
   const height = snapLevelDimension(nextHeight, canvas.height);
-  if (width < canvas.width || height < canvas.height) {
-    setStatus("Shrinking the level is not supported yet. Increase width and height only.");
-    syncCanvasBoundInputs();
-    return false;
-  }
   if (width === canvas.width && height === canvas.height) {
     syncCanvasBoundInputs();
     return false;
   }
-  const shiftX = width > previousWidth && state.levelExpandX === "left" ? width - previousWidth : 0;
-  const shiftY = height > previousHeight && state.levelExpandY === "up" ? height - previousHeight : 0;
+  const shiftX = state.levelExpandX === "left" ? width - previousWidth : 0;
+  const shiftY = state.levelExpandY === "up" ? height - previousHeight : 0;
   if (shiftX || shiftY) {
     state.layers.forEach((layer) => layer.actions.forEach((action) => offsetAction(action, shiftX, shiftY)));
   }
   canvas.width = width;
   canvas.height = height;
   ctx.imageSmoothingEnabled = false;
+  state.layers.forEach((layer) => layer.actions.forEach((action) => clipActionToCanvas(action, width, height)));
   state.hoverPoint = null;
   syncCanvasBoundInputs();
   redraw();
   syncCharacterControls();
+  syncNoteControls();
   updatePropertiesView();
   saveDraft();
-  setStatus(`Level expanded to ${canvas.width}x${canvas.height} toward ${state.levelExpandX}/${state.levelExpandY}.`);
+  setStatus(`Level resized to ${canvas.width}x${canvas.height} toward ${state.levelExpandX}/${state.levelExpandY}.`);
   return true;
 }
 
@@ -577,33 +632,68 @@ function makeLayer(name = `Layer ${state.layers.length + 1}`) {
   };
 }
 
+function moveLayerById(layerId, direction) {
+  const index = state.layers.findIndex((layer) => layer.id === layerId);
+  if (index === -1) return;
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= state.layers.length) return;
+  const [layer] = state.layers.splice(index, 1);
+  state.layers.splice(targetIndex, 0, layer);
+  redraw();
+  renderLayers();
+  saveDraft();
+}
+
 function renderLayers() {
   if (!layerList) return;
   layerList.innerHTML = "";
   state.layers.slice().reverse().forEach((layer) => {
     const isActive = layer.id === state.activeLayerId;
-    const row = document.createElement("button");
-    row.type = "button";
+    const row = document.createElement("div");
     row.className = `layer-row ${isActive ? "active" : ""}`;
     row.innerHTML = `
-      <span class="visibility">${layer.visible ? "visibility" : "visibility_off"}</span>
-      <span class="layer-icon material-symbols-outlined"${isActive ? ' style="font-variation-settings: \'FILL\' 1;"' : ""}>layers</span>
-      <span class="layer-name">${layer.name}${isActive ? " (Active)" : ""}</span>
-      <span class="lock-icon material-symbols-outlined">lock_open</span>
+      <button type="button" class="layer-visibility" aria-label="Toggle layer visibility">
+        <span class="visibility">${layer.visible ? "visibility" : "visibility_off"}</span>
+      </button>
+      <button type="button" class="layer-main" aria-label="Select layer">
+        <span class="layer-icon material-symbols-outlined"${isActive ? ' style="font-variation-settings: \'FILL\' 1;"' : ""}>layers</span>
+        <input class="layer-name-input" type="text" value="${layer.name.replace(/"/g, "&quot;")}" aria-label="Layer name">
+      </button>
+      <div class="layer-actions">
+        <button type="button" class="layer-move" data-dir="up" aria-label="Move layer up">
+          <span class="material-symbols-outlined">keyboard_arrow_up</span>
+        </button>
+        <button type="button" class="layer-move" data-dir="down" aria-label="Move layer down">
+          <span class="material-symbols-outlined">keyboard_arrow_down</span>
+        </button>
+      </div>
     `;
-    row.addEventListener("click", () => {
+    row.querySelector(".layer-main").addEventListener("click", () => {
       state.activeLayerId = layer.id;
       renderLayers();
       saveDraft();
     });
+    const visibilityButton = row.querySelector(".layer-visibility");
     const visibility = row.querySelector(".visibility");
     visibility.classList.add("material-symbols-outlined");
-    visibility.addEventListener("click", (event) => {
+    visibilityButton.addEventListener("click", (event) => {
       event.stopPropagation();
       layer.visible = !layer.visible;
       redraw();
       renderLayers();
       saveDraft();
+    });
+    const nameInput = row.querySelector(".layer-name-input");
+    nameInput.addEventListener("click", (event) => event.stopPropagation());
+    nameInput.addEventListener("input", () => {
+      layer.name = nameInput.value.trim() || "Untitled Layer";
+      saveDraft();
+    });
+    row.querySelectorAll(".layer-move").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        moveLayerById(layer.id, button.dataset.dir === "up" ? 1 : -1);
+      });
     });
     layerList.appendChild(row);
   });
@@ -997,6 +1087,10 @@ function drawAction(action) {
     drawArchiveTemplate();
     return;
   }
+  if (action.type === "backgroundImage") {
+    drawBackgroundImageAction(action);
+    return;
+  }
   if (action.type === "character") {
     drawCharacterAction(action);
     return;
@@ -1039,6 +1133,15 @@ function drawAction(action) {
     }
     drawRotatedAsset(image, action);
   }
+}
+
+function drawBackgroundImageAction(action) {
+  const image = loadedAssets[action.src] || loadAssetImage({ path: action.src });
+  if (!isImageReady(image)) {
+    image.addEventListener("load", redraw, { once: true });
+    return;
+  }
+  ctx.drawImage(image, action.x || 0, action.y || 0, action.w || canvas.width, action.h || canvas.height);
 }
 
 function drawHitboxAction(action, alpha = 0.28) {
@@ -1692,6 +1795,14 @@ function loadDraft() {
 
 function normalizeAction(action) {
   if (action.type === "asset") action.sheet = normalizeAssetPath(action.sheet);
+  if (action.type === "backgroundImage") {
+    action.id = action.id || `background-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    action.src = action.src || "";
+    action.x = Number(action.x) || 0;
+    action.y = Number(action.y) || 0;
+    action.w = Number(action.w) || canvas.width;
+    action.h = Number(action.h) || canvas.height;
+  }
   if (action.type === "hitbox") {
     action.x = Number(action.x) || 0;
     action.y = Number(action.y) || 0;
@@ -1947,6 +2058,130 @@ async function exportBundle() {
   }
 }
 
+async function importBundleFile(file) {
+  if (!file) return;
+  if (window.location.protocol === "file:") {
+    setStatus("Bundle import requires the editor to be opened through localhost, not file://.");
+    return;
+  }
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    const zipData = btoa(binary);
+    const response = await fetch(`${EXPORT_SERVER_ORIGIN}/import/bundle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ zipData })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    const payload = await response.json();
+    applyImportedLevel(payload);
+    setStatus(`Imported ${file.name} into the editor.`);
+  } catch (error) {
+    setStatus(`Bundle import failed: ${error.message}`);
+  }
+}
+
+function applyImportedLevel(payload) {
+  const width = snapLevelDimension(payload.width, canvas.width);
+  const height = snapLevelDimension(payload.height, canvas.height);
+  canvas.width = width;
+  canvas.height = height;
+  ctx.imageSmoothingEnabled = false;
+  const layers = [];
+  if (payload.backgroundDataUrl) {
+    layers.push({
+      id: `layer-${Date.now()}-background`,
+      name: "Background",
+      visible: true,
+      actions: [{
+        type: "backgroundImage",
+        id: `background-${Date.now()}`,
+        src: payload.backgroundDataUrl,
+        x: 0,
+        y: 0,
+        w: width,
+        h: height
+      }]
+    });
+  }
+  if (Array.isArray(payload.characters) && payload.characters.length) {
+    layers.push({
+      id: `layer-${Date.now()}-characters`,
+      name: "Characters",
+      visible: true,
+      actions: payload.characters.map((character, index) => ({
+        type: "character",
+        id: character.id || `character-import-${index + 1}`,
+        characterId: character.characterId || character.id || "character",
+        sprite: normalizeSpritePath(character.sprite || ""),
+        x: Number(character.x) || 0,
+        y: Number(character.y) || 0,
+        w: Number(character.width) || 16,
+        h: Number(character.height) || 32,
+        sourceX: Number(character.sourceX) || 0,
+        sourceY: Number(character.sourceY) || 0,
+        sourceW: Number(character.sourceWidth) || Number(character.width) || 16,
+        sourceH: Number(character.sourceHeight) || Number(character.height) || 32,
+        name: character.name || character.characterId || "Character",
+        dialogue: character.dialogue || ""
+      }))
+    });
+  }
+  if (Array.isArray(payload.hitboxes) && payload.hitboxes.length) {
+    layers.push({
+      id: `layer-${Date.now()}-hitboxes`,
+      name: "Hit Boxes",
+      visible: true,
+      actions: payload.hitboxes.map((box) => ({
+        type: "hitbox",
+        x: Number(box.x) || 0,
+        y: Number(box.y) || 0,
+        w: Number(box.width ?? box.w) || 16,
+        h: Number(box.height ?? box.h) || 16
+      }))
+    });
+  }
+  if (Array.isArray(payload.notes) && payload.notes.length) {
+    layers.push({
+      id: `layer-${Date.now()}-notes`,
+      name: "Notes",
+      visible: true,
+      actions: payload.notes.map((note, index) => ({
+        type: "note",
+        id: note.id || `note-import-${index + 1}`,
+        x: Number(note.x) || 0,
+        y: Number(note.y) || 0,
+        title: note.title || "Note",
+        body: note.body || ""
+      }))
+    });
+  }
+  state.layers = layers.length ? layers : [{ id: "layer-1", name: "Layer 1", visible: true, actions: [] }];
+  state.activeLayerId = state.layers[state.layers.length - 1].id;
+  state.selectedCharacterActionId = null;
+  state.selectedNoteActionId = null;
+  state.hoverPoint = null;
+  state.start = null;
+  state.last = null;
+  state.drawing = false;
+  state.layers.forEach((layer) => layer.actions.forEach(normalizeAction));
+  syncCanvasBoundInputs();
+  renderLayers();
+  applyPanelLayout();
+  syncCharacterControls();
+  syncNoteControls();
+  renderCharacterBrowser();
+  updatePropertiesView();
+  redraw();
+  saveDraft();
+}
+
 async function runGamePreview() {
   if (window.location.protocol === "file:") {
     setStatus("Run preview requires the editor to be opened through localhost, not file://.");
@@ -2091,6 +2326,13 @@ function drawActionTo(targetCtx, action) {
     drawArchiveTemplateTo(targetCtx);
     return;
   }
+  if (action.type === "backgroundImage") {
+    const image = loadedAssets[action.src] || loadAssetImage({ path: action.src });
+    if (isImageReady(image)) {
+      targetCtx.drawImage(image, action.x || 0, action.y || 0, action.w || canvas.width, action.h || canvas.height);
+    }
+    return;
+  }
   if (action.type === "character" || action.type === "hitbox" || action.type === "note") return;
   targetCtx.lineCap = "square";
   targetCtx.lineJoin = "miter";
@@ -2181,7 +2423,11 @@ function drawTextTo(targetCtx, value, x, y, color, size) {
 }
 
 function waitForActionImages() {
-  const paths = [...new Set(allActions().filter((action) => action.type === "asset").map((action) => action.sheet))];
+  const paths = [...new Set(allActions().flatMap((action) => {
+    if (action.type === "asset") return [action.sheet];
+    if (action.type === "backgroundImage") return [action.src];
+    return [];
+  }))];
   return Promise.all(paths.map(waitForImage));
 }
 
@@ -2216,6 +2462,9 @@ async function actionToSvg(action) {
   }
   if (action.type === "note") {
     return "";
+  }
+  if (action.type === "backgroundImage") {
+    return `<image href="${escapeXml(action.src)}" x="${action.x || 0}" y="${action.y || 0}" width="${action.w || canvas.width}" height="${action.h || canvas.height}" preserveAspectRatio="none" image-rendering="pixelated"/>`;
   }
   if (action.type === "stroke") {
     const points = action.points.map((point) => `${point.x},${point.y}`).join(" ");
@@ -2460,6 +2709,35 @@ deleteCharacterBtn.addEventListener("click", deleteSelectedCharacter);
 deleteNoteBtn.addEventListener("click", deleteSelectedNote);
 exportBundleBtn.addEventListener("click", exportBundle);
 runPreviewBtn.addEventListener("click", runGamePreview);
+
+["dragenter", "dragover"].forEach((eventName) => {
+  workspace.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    if (workspaceDropHint) workspaceDropHint.hidden = false;
+  });
+});
+
+["dragleave", "drop"].forEach((eventName) => {
+  workspace.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    hideWorkspaceDropHint();
+  });
+});
+
+workspace.addEventListener("drop", (event) => {
+  const file = [...(event.dataTransfer?.files || [])].find((item) => item.name.toLowerCase().endsWith(".zip"));
+  if (!file) {
+    setStatus("Drop a level export zip file to import it.");
+    return;
+  }
+  importBundleFile(file);
+});
+
+["pointerdown", "click"].forEach((eventName) => {
+  window.addEventListener(eventName, hideWorkspaceDropHint, true);
+});
+
+window.addEventListener("keydown", hideWorkspaceDropHint, true);
 
 setupAssetMenu();
 setupCharacterMenu();

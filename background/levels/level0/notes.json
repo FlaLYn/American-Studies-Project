@@ -1,0 +1,39 @@
+{
+  "room": "archive",
+  "level": "level0",
+  "notes": [
+    {
+      "id": "note-1778508939668-1cedc2abfe7bc",
+      "title": "NPC",
+      "body": "",
+      "x": 1024,
+      "y": 304,
+      "layer": {
+        "id": "layer-1778507719688-a6f4e7af347af",
+        "name": "Props"
+      }
+    },
+    {
+      "id": "note-1778508952233-ddfbf1db6cb5a8",
+      "title": "Spawn",
+      "body": "",
+      "x": 1008,
+      "y": 560,
+      "layer": {
+        "id": "layer-1778507719688-a6f4e7af347af",
+        "name": "Props"
+      }
+    },
+    {
+      "id": "note-1778509003996-29b5c91daac3e",
+      "title": "Level_Entrance",
+      "body": "",
+      "x": 528,
+      "y": 288,
+      "layer": {
+        "id": "layer-1778507719688-a6f4e7af347af",
+        "name": "Props"
+      }
+    }
+  ]
+}

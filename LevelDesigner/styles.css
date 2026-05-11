@@ -251,11 +251,30 @@
   min-width: 0;
   overflow: auto;
   padding: 32px;
+  position: relative;
   background:
     linear-gradient(to right, rgba(139, 144, 160, 0.1) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(139, 144, 160, 0.1) 1px, transparent 1px),
     var(--surface-lowest);
   background-size: 32px 32px;
+}
+
+.workspace-drop-hint {
+  position: absolute;
+  inset: 32px;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--editor-primary);
+  border-radius: 8px;
+  background: rgba(16, 19, 27, 0.88);
+  color: var(--editor-primary);
+  font-size: 16px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.workspace-drop-hint[hidden] {
+  display: none !important;
 }
 
 #levelCanvas {
@@ -582,10 +601,9 @@
 
 .layer-row {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
-  text-align: left;
   position: relative;
   min-height: 34px;
   border: 1px solid transparent;
@@ -612,39 +630,79 @@
   background: var(--editor-primary);
 }
 
-.visibility {
-  min-width: 28px;
-  color: inherit;
-  font-size: 16px;
+.layer-visibility,
+.layer-main,
+.layer-move {
+  border: 0;
+  background: transparent;
+  min-height: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
+.layer-visibility {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: inherit;
+}
+
+.visibility,
 .layer-icon {
-  min-width: 20px;
   color: inherit;
   font-size: 16px;
 }
 
-.layer-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.layer-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layer-name-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-size: 14px;
+  padding: 0;
 }
 
-.layer-count {
-  color: var(--editor-muted);
-  font-size: 12px;
+.layer-name-input:focus {
+  outline: none;
+  color: var(--editor-primary);
 }
 
-.layer-row .lock-icon {
-  opacity: 0;
+.layer-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.layer-move {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
   color: var(--editor-muted);
+  cursor: pointer;
+}
+
+.layer-move .material-symbols-outlined {
   font-size: 16px;
 }
 
-.layer-row:hover .lock-icon,
-.layer-row.active .lock-icon {
-  opacity: 1;
+.layer-row:hover .layer-move,
+.layer-row:hover .layer-visibility,
+.layer-row.active .layer-move,
+.layer-row.active .layer-visibility {
+  color: var(--editor-primary);
 }
 
 .asset-scroll {
