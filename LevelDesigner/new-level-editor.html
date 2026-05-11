@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>2D Level Editor</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-container": "#4c1a00",
+                        "surface-container-high": "#272a32",
+                        "on-tertiary": "#571e00",
+                        "primary": "#adc6ff",
+                        "outline-variant": "#414755",
+                        "surface": "#10131b",
+                        "on-tertiary-fixed-variant": "#7c2e00",
+                        "on-primary-fixed-variant": "#004493",
+                        "on-background": "#e0e2ed",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-surface-variant": "#c1c6d7",
+                        "inverse-primary": "#005bc1",
+                        "tertiary": "#ffb595",
+                        "surface-bright": "#363942",
+                        "surface-container-highest": "#31353d",
+                        "secondary-container": "#2ff801",
+                        "tertiary-container": "#ef6719",
+                        "outline": "#8b90a0",
+                        "primary-container": "#4b8eff",
+                        "tertiary-fixed-dim": "#ffb595",
+                        "on-secondary-fixed": "#022100",
+                        "on-secondary-container": "#0f6d00",
+                        "secondary": "#d7ffc5",
+                        "tertiary-fixed": "#ffdbcc",
+                        "surface-container-lowest": "#0b0e16",
+                        "error-container": "#93000a",
+                        "surface-variant": "#31353d",
+                        "primary-fixed": "#d8e2ff",
+                        "background": "#10131b",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#351000",
+                        "surface-tint": "#adc6ff",
+                        "surface-container": "#1c2028",
+                        "on-primary-container": "#00285c",
+                        "on-primary-fixed": "#001a41",
+                        "on-secondary-fixed-variant": "#095300",
+                        "on-surface": "#e0e2ed",
+                        "secondary-fixed": "#79ff5b",
+                        "on-secondary": "#053900",
+                        "inverse-surface": "#e0e2ed",
+                        "inverse-on-surface": "#2d3039",
+                        "surface-container-low": "#181c23",
+                        "on-error": "#690005",
+                        "on-primary": "#002e69",
+                        "surface-dim": "#10131b",
+                        "secondary-fixed-dim": "#2ae500"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "xl": "40px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "gutter": "1px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "h2": [
+                            "Inter"
+                        ],
+                        "mono-label": [
+                            "Inter"
+                        ],
+                        "body-lg": [
+                            "Inter"
+                        ],
+                        "body-sm": [
+                            "Inter"
+                        ],
+                        "h1": [
+                            "Inter"
+                        ],
+                        "label-caps": [
+                            "Inter"
+                        ]
+                    },
+                    "fontSize": {
+                        "h2": [
+                            "24px",
+                            {
+                                "lineHeight": "1.3",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "mono-label": [
+                            "11px",
+                            {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "500"
+                            }
+                        ],
+                        "body-lg": [
+                            "16px",
+                            {
+                                "lineHeight": "1.6",
+                                "letterSpacing": "0",
+                                "fontWeight": "400"
+                            }
+                        ],
+                        "body-sm": [
+                            "14px",
+                            {
+                                "lineHeight": "1.5",
+                                "letterSpacing": "0",
+                                "fontWeight": "400"
+                            }
+                        ],
+                        "h1": [
+                            "32px",
+                            {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "label-caps": [
+                            "12px",
+                            {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "700"
+                            }
+                        ]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .grid-pattern {
+            background-size: 32px 32px;
+            background-image:
+                linear-gradient(to right, rgba(139, 144, 160, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(139, 144, 160, 0.1) 1px, transparent 1px);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background text-on-surface h-screen overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+    
+    <header
+        class="h-xl w-full bg-surface-container dark:bg-surface-container border-b border-outline-variant dark:border-outline-variant fixed top-0 right-0 left-[240px] flex justify-between items-center px-lg z-10"
+        style="width: calc(100% - 240px);">
+        <!-- Left area: Product Name & Nav Links -->
+        <div class="flex items-center gap-lg h-full">
+            <span
+                class="font-label-caps text-label-caps uppercase text-on-surface font-bold tracking-widest text-on-surface-variant">2D
+                Level Editor</span>
+            <div class="h-full w-px bg-outline-variant mx-2"></div>
+            <nav class="flex h-full items-center gap-md">
+                <!-- File (Active) -->
+                <a class="h-full flex items-center text-primary font-label-caps text-label-caps uppercase font-bold border-b-2 border-primary active:opacity-80 transition-all"
+                    href="#">File</a>
+                <!-- Edit -->
+                <a class="h-full flex items-center text-on-surface-variant font-label-caps text-label-caps uppercase hover:text-primary transition-opacity active:opacity-80 transition-all"
+                    href="#">Edit</a>
+                <!-- View -->
+                <a class="h-full flex items-center text-on-surface-variant font-label-caps text-label-caps uppercase hover:text-primary transition-opacity active:opacity-80 transition-all"
+                    href="#">View</a>
+                <!-- Run -->
+                <a class="h-full flex items-center text-on-surface-variant font-label-caps text-label-caps uppercase hover:text-primary transition-opacity active:opacity-80 transition-all"
+                    href="#">Run</a>
+            </nav>
+        </div>
+        <!-- Right area: Search, Icons, CTA -->
+        <div class="flex items-center gap-md">
+            <!-- Search Bar -->
+            <div class="relative hidden lg:block">
+                <span
+                    class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px]">search</span>
+                <input
+                    class="bg-surface-container-lowest border border-outline-variant rounded-full py-1 pl-8 pr-3 text-body-sm font-body-sm text-on-surface focus:outline-none focus:border-primary w-[160px] transition-colors"
+                    placeholder="Search..." type="text" />
+            </div>
+            <div class="h-4 w-px bg-outline-variant mx-1"></div>
+            <!-- Icon Actions -->
+            <button
+                class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center w-8 h-8 rounded hover:bg-surface-container-high">
+                <span class="material-symbols-outlined text-[20px]" data-icon="cloud_upload">cloud_upload</span>
+            </button>
+            <button
+                class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center w-8 h-8 rounded hover:bg-surface-container-high">
+                <span class="material-symbols-outlined text-[20px]" data-icon="undo">undo</span>
+            </button>
+            <button
+                class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center w-8 h-8 rounded hover:bg-surface-container-high">
+                <span class="material-symbols-outlined text-[20px]" data-icon="redo">redo</span>
+            </button>
+            <!-- Trailing CTA -->
+            <button
+                class="ml-2 px-3 py-1.5 bg-transparent border border-outline-variant text-on-surface font-label-caps text-label-caps uppercase rounded hover:border-primary hover:text-primary transition-colors flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                Build Game
+            </button>
+        </div>
+    </header>
+    <!-- Main Workspace Container -->
+    <main class="ml-[240px] pt-xl h-screen bg-surface-container-lowest flex flex-col relative z-0">
+        <!-- Top Section: Tools, Canvas, Properties -->
+        <div class="flex-1 flex overflow-hidden border-b border-outline-variant">
+            <!-- Left Vertical Tool Palette -->
+            <div
+                class="w-[48px] bg-surface flex flex-col items-center py-sm border-r border-outline-variant gap-sm flex-shrink-0 z-10">
+                <!-- Select -->
+                <button
+                    class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                    title="Select">
+                    <span class="material-symbols-outlined text-[20px]">arrow_selector_tool</span>
+                </button>
+                <!-- Brush (Active) -->
+                <button
+                    class="w-8 h-8 flex items-center justify-center rounded bg-primary-container text-on-primary-container relative group"
+                    title="Brush">
+                    <div class="absolute left-[-8px] top-1/2 -translate-y-1/2 w-1 h-4 bg-secondary-fixed rounded-r">
+                    </div>
+                    <span class="material-symbols-outlined text-[20px]"
+                        style="font-variation-settings: 'FILL' 1;">brush</span>
+                </button>
+                <!-- Fill -->
+                <button
+                    class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                    title="Fill">
+                    <span class="material-symbols-outlined text-[20px]">format_color_fill</span>
+                </button>
+                <!-- Erase -->
+                <button
+                    class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                    title="Erase">
+                    <span class="material-symbols-outlined text-[20px]">ink_eraser</span>
+                </button>
+                <!-- Eyedropper -->
+                <button
+                    class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                    title="Eyedropper">
+                    <span class="material-symbols-outlined text-[20px]">colorize</span>
+                </button>
+                <div class="w-6 h-px bg-outline-variant my-1"></div>
+                <!-- Color Swatches -->
+                <div
+                    class="w-6 h-6 rounded bg-[#ff5252] border border-outline-variant cursor-pointer ring-1 ring-offset-1 ring-offset-surface ring-primary">
+                </div>
+                <div class="w-6 h-6 rounded bg-[#4caf50] border border-outline-variant cursor-pointer"></div>
+            </div>
+            <!-- Central Canvas -->
+            <div
+                class="flex-1 bg-surface-container-lowest relative overflow-hidden flex items-center justify-center grid-pattern shadow-inner cursor-crosshair">
+                <!-- Simulated Level Content -->
+                <div class="relative w-[512px] h-[384px] border border-outline-variant/30 bg-surface/50 shadow-2xl">
+                    <!-- Environment Blocks -->
+                    <div class="absolute bottom-0 left-0 w-full h-[64px] bg-[#2d3039] border-t border-[#414755]"></div>
+                    <div
+                        class="absolute bottom-[64px] left-[64px] w-[128px] h-[32px] bg-[#363942] border border-[#414755]">
+                    </div>
+                    <div
+                        class="absolute bottom-[96px] left-[256px] w-[96px] h-[32px] bg-[#363942] border border-[#414755]">
+                    </div>
+                    <!-- Selected Object (Player Character representation) -->
+                    <div
+                        class="absolute bottom-[64px] left-[128px] w-[32px] h-[48px] border-2 border-secondary-fixed bg-primary-container/20 flex flex-col justify-end group">
+                        <div class="w-full h-[32px] bg-primary rounded-t-sm"></div>
+                        <!-- Resize Handles -->
+                        <div
+                            class="absolute -top-1.5 -left-1.5 w-2.5 h-2.5 bg-surface border border-secondary-fixed rounded-sm cursor-nwse-resize">
+                        </div>
+                        <div
+                            class="absolute -top-1.5 -right-1.5 w-2.5 h-2.5 bg-surface border border-secondary-fixed rounded-sm cursor-nesw-resize">
+                        </div>
+                        <div
+                            class="absolute -bottom-1.5 -left-1.5 w-2.5 h-2.5 bg-surface border border-secondary-fixed rounded-sm cursor-nesw-resize">
+                        </div>
+                        <div
+                            class="absolute -bottom-1.5 -right-1.5 w-2.5 h-2.5 bg-surface border border-secondary-fixed rounded-sm cursor-nwse-resize">
+                        </div>
+                    </div>
+                    <!-- HUD Overlay -->
+                    <div
+                        class="absolute top-sm left-sm bg-surface-container-high/80 px-2 py-1 rounded text-mono-label font-mono-label text-on-surface-variant backdrop-blur-sm border border-outline-variant/50">
+                        Camera: X 1024, Y -256 | Zoom: 100%
+                    </div>
+                </div>
+                <!-- Canvas Scrollbars (Simulated) -->
+                <div
+                    class="absolute bottom-0 left-0 w-full h-3 bg-surface-container-low border-t border-outline-variant">
+                    <div
+                        class="h-full w-1/3 bg-outline-variant/50 rounded-full mx-1 hover:bg-outline-variant transition-colors cursor-pointer">
+                    </div>
+                </div>
+                <div class="absolute top-0 right-0 h-full w-3 bg-surface-container-low border-l border-outline-variant">
+                    <div
+                        class="w-full h-1/4 bg-outline-variant/50 rounded-full my-1 hover:bg-outline-variant transition-colors cursor-pointer mt-8">
+                    </div>
+                </div>
+            </div>
+            <!-- Right Vertical Panel (Layers & Properties) -->
+            <div class="w-[320px] bg-surface flex flex-col border-l border-outline-variant flex-shrink-0 z-10">
+                <!-- Layer Manager -->
+                <div class="flex-1 border-b border-outline-variant flex flex-col min-h-[50%]">
+                    <!-- Header -->
+                    <div
+                        class="h-10 px-md border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+                        <span
+                            class="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold">Layers</span>
+                        <div class="flex gap-1">
+                            <button
+                                class="w-6 h-6 flex items-center justify-center rounded hover:bg-surface-container-high text-on-surface-variant"><span
+                                    class="material-symbols-outlined text-[16px]">add</span></button>
+                            <button
+                                class="w-6 h-6 flex items-center justify-center rounded hover:bg-surface-container-high text-on-surface-variant"><span
+                                    class="material-symbols-outlined text-[16px]">folder</span></button>
+                        </div>
+                    </div>
+                    <!-- Layer List -->
+                    <div class="flex-1 overflow-y-auto p-xs space-y-1">
+                        <!-- Foreground Layer -->
+                        <div
+                            class="flex items-center px-2 py-1.5 rounded hover:bg-surface-container-high cursor-pointer group">
+                            <button class="text-on-surface-variant hover:text-primary mr-2"><span
+                                    class="material-symbols-outlined text-[16px]">visibility</span></button>
+                            <span
+                                class="material-symbols-outlined text-[16px] text-on-surface-variant mr-2">layers</span>
+                            <span
+                                class="font-body-sm text-body-sm text-on-surface-variant flex-1 truncate">Foreground</span>
+                            <button class="text-outline hover:text-error opacity-0 group-hover:opacity-100"><span
+                                    class="material-symbols-outlined text-[16px]">lock_open</span></button>
+                        </div>
+                        <!-- Midground Layer (Active) -->
+                        <div
+                            class="flex items-center px-2 py-1.5 rounded bg-surface-container-highest border border-outline-variant/50 cursor-pointer group relative">
+                            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[70%] bg-primary rounded-r">
+                            </div>
+                            <button class="text-primary mr-2"><span
+                                    class="material-symbols-outlined text-[16px]">visibility</span></button>
+                            <span class="material-symbols-outlined text-[16px] text-primary mr-2"
+                                style="font-variation-settings: 'FILL' 1;">layers</span>
+                            <span
+                                class="font-body-sm text-body-sm text-on-surface font-medium flex-1 truncate">Midground
+                                (Active)</span>
+                            <button class="text-outline hover:text-error opacity-0 group-hover:opacity-100"><span
+                                    class="material-symbols-outlined text-[16px]">lock_open</span></button>
+                        </div>
+                        <!-- Background Layer -->
+                        <div
+                            class="flex items-center px-2 py-1.5 rounded hover:bg-surface-container-high cursor-pointer group">
+                            <button class="text-outline hover:text-primary mr-2"><span
+                                    class="material-symbols-outlined text-[16px]">visibility_off</span></button>
+                            <span
+                                class="material-symbols-outlined text-[16px] text-on-surface-variant mr-2">image</span>
+                            <span class="font-body-sm text-body-sm text-outline flex-1 truncate">Background
+                                Parallax</span>
+                            <button class="text-outline hover:text-error opacity-0 group-hover:opacity-100"><span
+                                    class="material-symbols-outlined text-[16px]">lock</span></button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Properties Panel -->
+                <div class="flex-1 flex flex-col bg-surface min-h-[50%] overflow-y-auto">
+                    <!-- Header -->
+                    <div
+                        class="h-10 px-md border-b border-outline-variant flex items-center bg-surface-container-low sticky top-0 z-10">
+                        <span
+                            class="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold">Properties</span>
+                        <span
+                            class="ml-2 px-1.5 py-0.5 bg-surface-container-high rounded text-mono-label font-mono-label text-outline">Player_Spawn_1</span>
+                    </div>
+                    <!-- Property Groups -->
+                    <div class="p-md space-y-md">
+                        <!-- Transform -->
+                        <div>
+                            <div class="flex items-center gap-1 mb-2 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-[14px]">transform</span>
+                                <span class="font-mono-label text-mono-label uppercase">Transform</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div
+                                    class="flex items-center bg-surface-container-lowest border border-outline-variant rounded px-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20">
+                                    <span class="font-mono-label text-mono-label text-outline mr-2">X</span>
+                                    <input
+                                        class="w-full bg-transparent border-none text-body-sm font-body-sm text-on-surface p-1 focus:ring-0"
+                                        type="number" value="128" />
+                                </div>
+                                <div
+                                    class="flex items-center bg-surface-container-lowest border border-outline-variant rounded px-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20">
+                                    <span class="font-mono-label text-mono-label text-outline mr-2">Y</span>
+                                    <input
+                                        class="w-full bg-transparent border-none text-body-sm font-body-sm text-on-surface p-1 focus:ring-0"
+                                        type="number" value="64" />
+                                </div>
+                                <div
+                                    class="flex items-center bg-surface-container-lowest border border-outline-variant rounded px-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20">
+                                    <span class="font-mono-label text-mono-label text-outline mr-2">W</span>
+                                    <input
+                                        class="w-full bg-transparent border-none text-body-sm font-body-sm text-on-surface p-1 focus:ring-0"
+                                        type="number" value="32" />
+                                </div>
+                                <div
+                                    class="flex items-center bg-surface-container-lowest border border-outline-variant rounded px-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20">
+                                    <span class="font-mono-label text-mono-label text-outline mr-2">H</span>
+                                    <input
+                                        class="w-full bg-transparent border-none text-body-sm font-body-sm text-on-surface p-1 focus:ring-0"
+                                        type="number" value="48" />
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Sprite Settings -->
+                        <div class="pt-2 border-t border-outline-variant">
+                            <div class="flex items-center gap-1 mb-2 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-[14px]">image</span>
+                                <span class="font-mono-label text-mono-label uppercase">Sprite</span>
+                            </div>
+                            <select
+                                class="w-full bg-surface-container-lowest border border-outline-variant rounded text-body-sm font-body-sm text-on-surface p-2 focus:border-primary focus:ring-1 focus:ring-primary/20">
+                                <option>hero_idle.png</option>
+                                <option>hero_run.png</option>
+                                <option>hero_jump.png</option>
+                            </select>
+                            <div class="mt-3 flex items-center justify-between">
+                                <span class="font-body-sm text-body-sm text-on-surface-variant">Color Tint</span>
+                                <div class="w-16 h-6 rounded bg-white border border-outline-variant cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Physics / Tags -->
+                        <div class="pt-2 border-t border-outline-variant">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-1 text-on-surface-variant">
+                                    <span class="material-symbols-outlined text-[14px]">sports_esports</span>
+                                    <span class="font-mono-label text-mono-label uppercase">Physics</span>
+                                </div>
+                                <!-- Custom Toggle -->
+                                <div class="w-8 h-4 bg-primary-container rounded-full relative cursor-pointer">
+                                    <div
+                                        class="absolute right-0.5 top-0.5 w-3 h-3 bg-on-primary-container rounded-full">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span
+                                    class="px-2 py-1 bg-surface-container-high border border-outline-variant rounded text-mono-label font-mono-label text-on-surface flex items-center gap-1">
+                                    Solid <button class="hover:text-error"><span
+                                            class="material-symbols-outlined text-[12px]">close</span></button>
+                                </span>
+                                <span
+                                    class="px-2 py-1 bg-surface-container-high border border-outline-variant rounded text-mono-label font-mono-label text-on-surface flex items-center gap-1">
+                                    Player <button class="hover:text-error"><span
+                                            class="material-symbols-outlined text-[12px]">close</span></button>
+                                </span>
+                                <button
+                                    class="px-2 py-1 border border-dashed border-outline-variant rounded text-mono-label font-mono-label text-outline hover:text-primary hover:border-primary transition-colors flex items-center">
+                                    <span class="material-symbols-outlined text-[12px] mr-1">add</span> Tag
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom Section: Asset Shelf -->
+        <div class="h-[200px] bg-surface flex flex-col flex-shrink-0 z-10">
+            <!-- Asset Header -->
+            <div
+                class="h-10 px-md border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+                <div class="flex items-center gap-4">
+                    <span class="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold">Asset
+                        Browser</span>
+                    <!-- Tabs -->
+                    <div class="flex gap-2">
+                        <button
+                            class="px-3 py-1 bg-surface-container-highest text-primary rounded-full font-mono-label text-mono-label border border-primary/30">Tilesets</button>
+                        <button
+                            class="px-3 py-1 text-on-surface-variant hover:text-on-surface rounded-full font-mono-label text-mono-label hover:bg-surface-container-high transition-colors">Prefabs</button>
+                        <button
+                            class="px-3 py-1 text-on-surface-variant hover:text-on-surface rounded-full font-mono-label text-mono-label hover:bg-surface-container-high transition-colors">Audio</button>
+                    </div>
+                </div>
+                <!-- Filters -->
+                <div class="flex items-center gap-2">
+                    <div
+                        class="flex items-center bg-surface-container-lowest border border-outline-variant rounded px-2 py-1">
+                        <span class="material-symbols-outlined text-[14px] text-outline mr-1">filter_alt</span>
+                        <select
+                            class="bg-transparent border-none text-mono-label font-mono-label text-on-surface-variant p-0 pr-4 focus:ring-0">
+                            <option>Dungeon</option>
+                            <option>Forest</option>
+                            <option>Sci-Fi</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <!-- Asset Grid (Scrollable horizontally) -->
+            <div
+                class="flex-1 overflow-x-auto overflow-y-hidden p-md flex gap-md items-start bg-surface-container-lowest">
+                <!-- Tile Group (Dungeon Wall) -->
+                <div class="flex flex-col gap-1">
+                    <div
+                        class="w-16 h-16 bg-[#363942] border-2 border-outline-variant hover:border-primary rounded flex items-center justify-center cursor-pointer transition-colors group relative">
+                        <span class="material-symbols-outlined text-outline group-hover:text-primary">grid_4x4</span>
+                        <!-- Hover detail -->
+                        <div class="absolute bottom-1 right-1 text-[10px] text-outline">Wall</div>
+                    </div>
+                </div>
+                <!-- Tile Group (Dungeon Floor) -->
+                <div class="flex flex-col gap-1">
+                    <div
+                        class="w-16 h-16 bg-[#2d3039] border-2 border-outline-variant hover:border-primary rounded flex items-center justify-center cursor-pointer transition-colors group">
+                        <span class="material-symbols-outlined text-outline group-hover:text-primary">apps</span>
+                    </div>
+                </div>
+                <div class="w-px h-16 bg-outline-variant/50 mx-2"></div>
+                <!-- Prefab (Spikes) -->
+                <div class="flex flex-col gap-1 items-center">
+                    <div
+                        class="w-16 h-16 bg-surface-container-high border-2 border-outline-variant hover:border-primary rounded flex items-end justify-center pb-2 cursor-pointer transition-colors group relative overflow-hidden">
+                        <div
+                            class="w-8 h-4 border-b-[8px] border-l-[4px] border-r-[4px] border-b-on-surface border-l-transparent border-r-transparent group-hover:border-b-primary transition-colors">
+                        </div>
+                    </div>
+                    <span class="font-mono-label text-[10px] text-on-surface-variant">Spikes</span>
+                </div>
+                <!-- Prefab (Door) -->
+                <div class="flex flex-col gap-1 items-center">
+                    <div
+                        class="w-16 h-16 bg-surface-container-high border-2 border-outline-variant hover:border-primary rounded flex items-center justify-center cursor-pointer transition-colors group">
+                        <span
+                            class="material-symbols-outlined text-[32px] text-on-surface-variant group-hover:text-primary transition-colors">door_front</span>
+                    </div>
+                    <span class="font-mono-label text-[10px] text-on-surface-variant">Exit Door</span>
+                </div>
+                <!-- Prefab (Key) -->
+                <div class="flex flex-col gap-1 items-center">
+                    <div
+                        class="w-16 h-16 bg-surface-container-high border-2 border-outline-variant hover:border-primary rounded flex items-center justify-center cursor-pointer transition-colors group">
+                        <span
+                            class="material-symbols-outlined text-[28px] text-tertiary group-hover:text-tertiary-fixed transition-colors">key</span>
+                    </div>
+                    <span class="font-mono-label text-[10px] text-on-surface-variant">Gold Key</span>
+                </div>
+                <!-- Ghost Slot -->
+                <div class="flex flex-col gap-1 items-center opacity-50">
+                    <div
+                        class="w-16 h-16 bg-transparent border-2 border-dashed border-outline-variant rounded flex items-center justify-center cursor-not-allowed">
+                        <span class="material-symbols-outlined text-outline">add_photo_alternate</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

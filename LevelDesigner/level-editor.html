@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Level Background Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=17">
+</head>
+
+<body class="designer-page">
+  <header class="designer-topbar">
+    <div class="topbar-left">
+      <span class="section-label">Level Background Editor</span>
+      <nav class="topbar-tabs" aria-label="Editor menus">
+        <button type="button" class="tab active">File</button>
+        <button type="button" class="tab" id="exportBundleBtn">Export</button>
+        <button type="button" class="tab" id="runPreviewBtn">Run</button>
+      </nav>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" id="undoBtn">Undo</button>
+      <button type="button" id="saveBrowserBtn">Save Draft</button>
+      <button type="button" id="clearBtn">Clear</button>
+    </div>
+  </header>
+
+  <main class="designer-main">
+    <aside class="tool-rail" aria-label="Drawing tools">
+      <button type="button" class="tool active" data-tool="pencil" title="Pencil">
+        <span class="material-symbols-outlined">brush</span>
+      </button>
+      <button type="button" class="tool" data-tool="eraser" title="Eraser">
+        <span class="material-symbols-outlined">ink_eraser</span>
+      </button>
+      <button type="button" class="tool" data-tool="line" title="Line">
+        <span class="material-symbols-outlined">show_chart</span>
+      </button>
+      <button type="button" class="tool" data-tool="rect" title="Rectangle">
+        <span class="material-symbols-outlined">rectangle</span>
+      </button>
+      <button type="button" class="tool" data-tool="asset" title="Asset Browser">
+        <span class="material-symbols-outlined">inventory_2</span>
+      </button>
+    </aside>
+
+    <section class="canvas-area">
+      <div class="canvas-header">
+        <div>
+          <h1>Level Background Editor</h1>
+          <p id="levelDescription">Draw a 640x480 background for Level 0: The Archive.</p>
+        </div>
+        <div class="canvas-header-actions">
+          <div class="level-size-controls" aria-label="Level size controls">
+            <label><span>W</span><input id="levelWidth" type="number" min="160" max="4096" step="16" value="640"></label>
+            <label><span>H</span><input id="levelHeight" type="number" min="160" max="4096" step="16" value="480"></label>
+            <label><span>X</span><select id="levelExpandX"><option value="right">Right</option><option value="left">Left</option></select></label>
+            <label><span>Y</span><select id="levelExpandY"><option value="down">Down</option><option value="up">Up</option></select></label>
+            <button type="button" id="resizeLevelBtn">Expand Level</button>
+          </div>
+          <button type="button" id="gridBtn">Grid On</button>
+        </div>
+      </div>
+      <section class="workspace">
+        <canvas id="levelCanvas" width="640" height="480" aria-label="Drawable level background"></canvas>
+      </section>
+      <section class="asset-shelf" id="assetDrawer">
+        <div class="asset-shelf-header">
+          <div class="asset-shelf-left">
+            <span class="panel-title">Asset Browser</span>
+            <div class="asset-shelf-tabs" aria-label="Asset categories">
+              <button type="button" class="asset-tab active" data-asset-tab="tilesets">Tilesets</button>
+              <button type="button" class="asset-tab" data-asset-tab="characters">Characters</button>
+              <button type="button" class="asset-tab" data-asset-tab="hitboxes">Hit Boxes</button>
+              <button type="button" class="asset-tab" data-asset-tab="notes">Notes</button>
+            </div>
+          </div>
+          <div class="asset-shelf-controls" id="assetShelfControls">
+            <label class="asset-select-label">Sheet <select id="assetSheet"></select></label>
+          </div>
+        </div>
+        <div class="asset-shelf-body">
+          <div class="asset-panel" data-asset-panel="tilesets">
+            <p id="assetStatus">Click for one tile. Shift-click one corner, then Shift-click the opposite corner for a block.</p>
+            <div class="asset-scroll">
+              <canvas id="assetCanvas" width="256" height="256" aria-label="Texture asset sheet"></canvas>
+            </div>
+          </div>
+          <div class="asset-panel" data-asset-panel="characters" hidden>
+            <p id="characterStatus">Choose a character, then click the canvas to place it. Click a placed character to edit its dialogue.</p>
+            <div class="character-browser" id="characterBrowser" aria-label="Character browser"></div>
+          </div>
+          <div class="asset-panel" data-asset-panel="hitboxes" hidden>
+            <p id="hitboxStatus">Click the canvas to place solid collision boxes. These stay editor-only and are not baked into PNG or SVG exports.</p>
+          </div>
+          <div class="asset-panel" data-asset-panel="notes" hidden>
+            <p id="notesStatus">Click the canvas to place editor notes. These never appear in the game and export to notes.json only.</p>
+          </div>
+        </div>
+      </section>
+      <section class="notes">
+        <p>Exported PNGs are meant for <code>../background/levels/level0/background.png</code>. Tile assets are embedded in SVG exports and included in PNG exports. Character spawns, dialogue, hit boxes, and notes stay as editor data and are not baked into the background image.</p>
+        <div class="download-links">
+          <a id="pngDownloadLink" href="#" download="background.png" hidden>Download latest PNG</a>
+          <a id="svgDownloadLink" href="#" download="background.svg" hidden>Download latest SVG</a>
+        </div>
+      </section>
+    </section>
+
+    <div class="panel-resize-handle" id="rightPanelResizeHandle" aria-hidden="true"></div>
+
+    <aside class="properties-panel" id="propertiesPanel">
+      <section class="layers-manager">
+        <div class="side-header">
+          <span class="panel-title">Layers</span>
+          <div class="icon-actions">
+            <button type="button" id="addLayerBtn" class="icon-btn" title="Add layer">
+              <span class="material-symbols-outlined">add</span>
+            </button>
+            <button type="button" id="deleteLayerBtn" class="icon-btn" title="Delete active layer">
+              <span class="material-symbols-outlined">folder_delete</span>
+            </button>
+            <button type="button" id="toggleLayersBtn" class="icon-btn" title="Collapse layers">
+              <span class="material-symbols-outlined">unfold_less</span>
+            </button>
+          </div>
+        </div>
+        <div class="layer-list" id="layerList" aria-label="Layers"></div>
+      </section>
+
+      <div class="section-resize-handle" id="sectionResizeHandle" aria-hidden="true"></div>
+
+      <section class="properties-stack">
+        <div class="side-header sticky">
+          <span class="panel-title">Properties</span>
+          <div class="icon-actions">
+            <span class="property-badge" id="propertyBadge">Pencil</span>
+            <button type="button" id="togglePropertiesBtn" class="icon-btn" title="Collapse properties">
+              <span class="material-symbols-outlined">unfold_less</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="property-groups">
+          <section class="property-group" data-tools="pencil,line,rect">
+            <div class="property-group-title">
+              <span class="material-symbols-outlined">brush</span>
+              <span>Style</span>
+            </div>
+            <div class="property-row">
+              <label>Color <input id="color" type="color" value="#f7f7f7"></label>
+            </div>
+            <div class="property-row">
+              <label>Size <input id="size" type="range" min="1" max="24" value="4"></label>
+            </div>
+          </section>
+
+          <section class="property-group" data-tools="eraser">
+            <div class="property-group-title">
+              <span class="material-symbols-outlined">ink_eraser</span>
+              <span>Eraser</span>
+            </div>
+            <div class="property-row">
+              <label>Size <input id="eraserSize" type="range" min="1" max="24" value="4"></label>
+            </div>
+          </section>
+
+          <section class="property-group" data-tools="asset" data-asset-modes="tilesets">
+            <div class="property-group-title">
+              <span class="material-symbols-outlined">transform</span>
+              <span>Transform</span>
+            </div>
+            <div class="property-grid">
+              <label><span>TILE</span><input id="tileSize" type="number" min="8" max="64" step="8" value="16"></label>
+              <label><span>SCALE</span><input id="assetScale" type="number" min="1" max="4" step="1" value="2"></label>
+              <label><span>ROT</span><select id="assetRotation">
+                  <option value="0">0</option>
+                  <option value="90">90</option>
+                  <option value="180">180</option>
+                  <option value="270">270</option>
+                </select></label>
+            </div>
+            <div class="property-row">
+              <label class="toggle-row" for="assetStack">
+                <span>Stack</span>
+                <input id="assetStack" type="checkbox">
+              </label>
+            </div>
+            <div class="property-row">
+              <label class="toggle-row" for="assetPrecisePlacement">
+                <span>Precise Placement</span>
+                <input id="assetPrecisePlacement" type="checkbox">
+              </label>
+            </div>
+            <div class="button-row">
+              <button type="button" id="rotateLeftBtn">Rotate Left</button>
+              <button type="button" id="rotateRightBtn">Rotate Right</button>
+            </div>
+          </section>
+
+          <section class="property-group" data-tools="asset" data-asset-modes="characters">
+            <div class="property-group-title">
+              <span class="material-symbols-outlined">person_pin_circle</span>
+              <span>Character</span>
+            </div>
+            <div class="property-row">
+              <label>Character
+                <select id="characterSelect"></select>
+              </label>
+            </div>
+            <div class="property-grid two">
+              <label><span>X</span><input id="characterX" type="number" min="0" max="640" step="1"></label>
+              <label><span>Y</span><input id="characterY" type="number" min="0" max="480" step="1"></label>
+            </div>
+            <div class="property-row">
+              <label>Name <input id="characterName" type="text" placeholder="Display name"></label>
+            </div>
+            <div class="property-row">
+              <label>Dialogue <textarea id="characterDialogue" rows="5" placeholder="What this character says when the player interacts."></textarea></label>
+            </div>
+            <p class="property-note">Click the canvas to place the selected character. Click an existing character to edit it.</p>
+            <div class="button-row single">
+              <button type="button" id="exportCharacterJsonBtn">Export Character JSON</button>
+            </div>
+            <div class="button-row single">
+              <button type="button" id="deleteCharacterBtn">Delete Character</button>
+            </div>
+          </section>
+
+          <section class="property-group" data-tools="asset" data-asset-modes="hitboxes">
+            <div class="property-group-title">
+              <span class="material-symbols-outlined">crop_square</span>
+              <span>Hit Box</span>
+            </div>
+            <div class="property-grid two">
+              <label><span>W</span><input id="hitboxWidth" type="number" min="8" max="640" step="8" value="16"></label>
+              <label><span>H</span><input id="hitboxHeight" type="number" min="8" max="480" step="8" value="16"></label>
+            </div>
+            <div class="property-row">
+              <label>Grid Snap <input id="hitboxSnap" type="number" min="8" max="64" step="8" value="16"></label>
+            </div>
+            <p class="property-note">Place invisible collision blocks for walls and solid objects. They are shown only inside the editor.</p>
+            <div class="button-row single">
+              <button type="button" id="exportHitboxesJsonBtn">Export Hitboxes JSON</button>
+            </div>
+          </section>
+
+          <section class="property-group" data-tools="asset" data-asset-modes="notes">
+            <div class="property-group-title">
+              <span class="material-symbols-outlined">sticky_note_2</span>
+              <span>Note</span>
+            </div>
+            <div class="property-grid two">
+              <label><span>X</span><input id="noteX" type="number" min="0" max="640" step="1"></label>
+              <label><span>Y</span><input id="noteY" type="number" min="0" max="480" step="1"></label>
+            </div>
+            <div class="property-row">
+              <label>Title <input id="noteTitle" type="text" placeholder="Short label"></label>
+            </div>
+            <div class="property-row">
+              <label>Note <textarea id="noteBody" rows="5" placeholder="Editor-only comments for this level area."></textarea></label>
+            </div>
+            <p class="property-note">Click the canvas to place a note marker. Click an existing marker to edit or move it.</p>
+            <div class="button-row single">
+              <button type="button" id="exportNotesJsonBtn">Export Notes JSON</button>
+            </div>
+            <div class="button-row single">
+              <button type="button" id="deleteNoteBtn">Delete Note</button>
+            </div>
+          </section>
+
+          <section class="property-group" data-tools="all">
+            <div class="property-group-title">
+              <span class="material-symbols-outlined">ios_share</span>
+              <span>Export</span>
+            </div>
+            <div class="button-row">
+              <button type="button" id="exportPngBtn">Export PNG</button>
+              <button type="button" id="exportSvgBtn">Export SVG</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="level-editor.js?v=16"></script>
+</body>
+
+</html>

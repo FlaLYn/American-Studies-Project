@@ -1,0 +1,27 @@
+{
+  "room": "archive",
+  "level": "level0",
+  "characters": [
+    {
+      "type": "character",
+      "characterId": "adam",
+      "name": "Adam",
+      "sprite": "sprites/player/Adam_idle_anim_16x16.png",
+      "source": {
+        "x": 288,
+        "y": 0,
+        "width": 16,
+        "height": 32
+      },
+      "position": {
+        "x": 768,
+        "y": 512
+      },
+      "size": {
+        "width": 16,
+        "height": 32
+      },
+      "dialogue": "Hey"
+    }
+  ]
+}
