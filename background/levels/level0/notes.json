@@ -1,28 +1,5 @@
 {
   "room": "archive",
   "level": "level0",
-  "notes": [
-    {
-      "id": "note-1778524089461-d3cad0b8bbb1c",
-      "title": "Cutscene",
-      "body": "",
-      "x": 752,
-      "y": 256,
-      "layer": {
-        "id": "layer-1778512453241-background",
-        "name": "Background"
-      }
-    },
-    {
-      "id": "note-1778505662430-5a5311c5939af",
-      "title": "Spawn",
-      "body": "",
-      "x": 768,
-      "y": 576,
-      "layer": {
-        "id": "layer-1778512453241-notes",
-        "name": "Notes"
-      }
-    }
-  ]
+  "notes": []
 }

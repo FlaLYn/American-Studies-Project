@@ -2190,11 +2190,22 @@ async function runGamePreview() {
   try {
     const payload = await buildGamePreviewPayload();
     await syncRuntimeLevel(payload);
-    localStorage.setItem(GAME_PREVIEW_STORAGE_KEY, JSON.stringify(payload));
-    const url = `${window.location.origin}/index.html?preview=editor&t=${Date.now()}`;
+    try {
+      localStorage.setItem(GAME_PREVIEW_STORAGE_KEY, JSON.stringify({
+        width: payload.width,
+        height: payload.height,
+        characters: payload.characters,
+        hitboxes: payload.hitboxes,
+        notes: payload.notes,
+        generatedAt: payload.generatedAt
+      }));
+    } catch {
+      // Runtime files are already synced; localStorage preview is optional.
+    }
+    const url = `${window.location.origin}/index.html?t=${Date.now()}`;
     const previewWindow = window.open(url, "_blank", "noopener");
     if (!previewWindow) window.location.href = url;
-    setStatus("Game preview opened and runtime level files were updated.");
+    setStatus("Game opened using the current synced level files.");
   } catch (error) {
     setStatus(`Run preview failed: ${error.message}`);
   }
