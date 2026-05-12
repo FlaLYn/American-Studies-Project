@@ -34,12 +34,21 @@ def editor_html():
     page = page.replace("<head>", '<head>\n  <base href="/LevelDesigner/">', 1)
     return Response(page, mimetype="text/html")
 
+def game_html():
+    page = (ROOT / "index.html").read_text(encoding="utf-8")
+    return Response(page, mimetype="text/html")
+
 
 @app.route("/", methods=["GET", "HEAD"])
-@app.route("/index.html", methods=["GET", "HEAD"])
 @app.route("/LevelDesigner/level-editor.html", methods=["GET", "HEAD"])
 def level_designer():
     return editor_html()
+
+
+@app.route("/play", methods=["GET", "HEAD"])
+@app.route("/index.html", methods=["GET", "HEAD"])
+def game_page():
+    return game_html()
 
 
 @app.post("/export/png")

@@ -2202,7 +2202,7 @@ async function runGamePreview() {
     } catch {
       // Runtime files are already synced; localStorage preview is optional.
     }
-    const url = `${window.location.origin}/index.html?t=${Date.now()}`;
+    const url = `${window.location.origin}/play?t=${Date.now()}`;
     const previewWindow = window.open(url, "_blank", "noopener");
     if (!previewWindow) window.location.href = url;
     setStatus("Game opened using the current synced level files.");
