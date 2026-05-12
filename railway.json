@@ -5,6 +5,6 @@
   },
   "deploy": {
     "startCommand": "python3 LevelDesigner/export_server.py",
-    "healthcheckPath": "/LevelDesigner/level-editor.html"
+    "healthcheckPath": "/"
   }
 }

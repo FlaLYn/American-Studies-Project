@@ -10,7 +10,7 @@ import sys
 import zipfile
 from urllib.error import URLError
 from urllib.request import urlopen
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -257,20 +257,26 @@ class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
-    def redirect_to_editor(self):
-        self.send_response(302)
-        self.send_header("Location", "/LevelDesigner/level-editor.html")
+    def serve_editor_index(self, include_body=True):
+        page = (ROOT / "LevelDesigner" / "level-editor.html").read_text(encoding="utf-8")
+        page = page.replace("<head>", '<head>\n  <base href="/LevelDesigner/">', 1)
+        content = page.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(content)))
         self.end_headers()
+        if include_body:
+            self.wfile.write(content)
 
     def do_GET(self):
-        if self.path in {"/", "/index.html"}:
-            self.redirect_to_editor()
+        if urlsplit(self.path).path in {"/", "/index.html"}:
+            self.serve_editor_index()
             return
         super().do_GET()
 
     def do_HEAD(self):
-        if self.path in {"/", "/index.html"}:
-            self.redirect_to_editor()
+        if urlsplit(self.path).path in {"/", "/index.html"}:
+            self.serve_editor_index(include_body=False)
             return
         super().do_HEAD()
 
